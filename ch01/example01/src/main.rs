@@ -1,9 +1,19 @@
 use std::thread;
 
 fn main() {
-    leaking();
+    sharing();
 }
 
+fn sharing() {
+    use std::rc::Rc;
+
+    let a = Rc::new([1, 2, 3]);
+    let b = a.clone();
+
+    assert_eq!(a.as_ptr(), b.as_ptr());
+}
+
+#[allow(dead_code)]
 fn leaking() {
     let x: &'static [i32; 3] = Box::leak(Box::new([1, 2, 3]));
 
