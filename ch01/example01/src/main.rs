@@ -1,9 +1,26 @@
 use std::thread;
 
 fn main() {
-    sharing();
+    cell();
 }
 
+fn cell() {
+    use std::cell::Cell;
+
+    let a = Cell::new(2);
+    f(&a, &a);
+
+    fn f(a: &Cell<i32>, b: &Cell<i32>) {
+        let before = a.get();
+        b.set(b.get() + 1);
+        let after = a.get();
+        if before != after {
+            unreachable!("might happen");
+        }
+    }
+}
+
+#[allow(dead_code)]
 fn sharing() {
     use std::rc::Rc;
 
