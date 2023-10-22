@@ -22,6 +22,31 @@ fn sharing() {
 
     t1.join().unwrap();
     t2.join().unwrap();
+
+    //---
+
+    use std::time::Duration;
+
+    let a = Arc::new([2, 3, 4]);
+    let t1 = thread::spawn({
+        let a = a.clone();
+        move || {
+            println!("sleeping...");
+            thread::sleep(Duration::from_secs(3));
+            dbg!(a);
+        }
+    });
+    let t2 = thread::spawn({
+        let a = a.clone();
+        move || {
+            println!("sleeping...");
+            thread::sleep(Duration::from_secs(1));
+            dbg!(a);
+        }
+    });
+
+    t1.join().unwrap();
+    t2.join().unwrap();
 }
 
 #[allow(dead_code)]
