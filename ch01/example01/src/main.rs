@@ -11,6 +11,17 @@ fn sharing() {
     let b = a.clone();
 
     assert_eq!(a.as_ptr(), b.as_ptr());
+
+    use std::sync::Arc;
+
+    let a = Arc::new([1, 2, 3]);
+    let b = a.clone();
+
+    let t1 = thread::spawn(move || dbg!(a));
+    let t2 = thread::spawn(move || dbg!(b));
+
+    t1.join().unwrap();
+    t2.join().unwrap();
 }
 
 #[allow(dead_code)]
