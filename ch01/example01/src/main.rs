@@ -1,9 +1,35 @@
 use std::thread;
 
 fn main() {
-    cell();
+    sendsync();
 }
 
+#[allow(dead_code, unused_variables)]
+fn sendsync() {
+    use std::cell::Cell;
+    use std::marker::PhantomData;
+
+    struct _X {
+        handle: i32,
+        _not_sync: PhantomData<Cell<()>>,
+    }
+
+    struct Y {
+        p: *mut i32,
+    }
+
+    fn send<T: Send>(_: T) {}
+    fn sync<T: Sync>(_: T) {}
+
+    let y = Y {
+        p: &mut 42 as *mut i32,
+    };
+
+    //send(y);
+    //sync(y);
+}
+
+#[allow(dead_code)]
 fn cell() {
     use std::cell::Cell;
 
