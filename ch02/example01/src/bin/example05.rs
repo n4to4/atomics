@@ -29,5 +29,7 @@ pub fn get_key() -> u64 {
 }
 
 fn generate_random_key() -> u64 {
-    rand::random()
+    use rand::Rng;
+    let mut rng = rand::thread_rng();
+    rng.gen_range(1..u64::MAX)
 }
