@@ -25,4 +25,5 @@ fn main() {
             s.spawn(f);
         }
     });
+    println!("{}, {}", unsafe { &*DATA }, unsafe { DATA.as_str().len() });
 }
