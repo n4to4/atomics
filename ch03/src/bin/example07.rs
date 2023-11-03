@@ -25,4 +25,6 @@ fn main() {
 
     a.join().unwrap();
     b.join().unwrap();
+
+    println!("{}", unsafe { &*S });
 }
