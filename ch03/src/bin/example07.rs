@@ -26,5 +26,5 @@ fn main() {
     a.join().unwrap();
     b.join().unwrap();
 
-    println!("{}", unsafe { &*S });
+    assert_eq!("!", unsafe { &*S }, "single push");
 }
