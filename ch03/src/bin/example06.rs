@@ -16,11 +16,14 @@ fn get_data() -> &'static Data {
     if p.is_null() {
         p = Box::into_raw(Box::new(generate_data()));
         if let Err(e) = PTR.compare_exchange(std::ptr::null_mut(), p, Release, Acquire) {
+            // Safety: p comes from Box::into_raw right above,
+            // and wasn't shared with any other thread.
             drop(unsafe { Box::from_raw(p) });
             p = e;
         }
     }
 
+    // Safety: p is not null and points to a properly initialized value.
     unsafe { &*p }
 }
 
