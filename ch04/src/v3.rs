@@ -59,3 +59,9 @@ impl<T> DerefMut for Guard<'_, T> {
         unsafe { &mut *self.lock.value.get() }
     }
 }
+
+impl<T> Drop for Guard<'_, T> {
+    fn drop(&mut self) {
+        self.lock.locked.store(false, Release);
+    }
+}
