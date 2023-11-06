@@ -1,3 +1,3 @@
 fn main() {
-    let lock = spinlock::SpinLock::new();
+    let _lock = spinlock::v1::SpinLock::new();
 }
