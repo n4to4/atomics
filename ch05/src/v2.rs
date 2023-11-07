@@ -1,9 +1,8 @@
-use std::{
-    collections::VecDeque,
-    sync::{Condvar, Mutex},
-};
+use std::{cell::UnsafeCell, mem::MaybeUninit, sync::atomic::AtomicBool};
 
 pub struct Channel<T> {
-    queue: Mutex<VecDeque<T>>,
-    item_ready: Condvar,
+    message: UnsafeCell<MaybeUninit<T>>,
+    ready: AtomicBool,
 }
+
+unsafe impl<T> Sync for Channel<T> where T: Send {}
