@@ -3,7 +3,7 @@ use std::{
     mem::MaybeUninit,
     sync::atomic::{
         AtomicBool,
-        Ordering::{Acquire, Release},
+        Ordering::{Acquire, Relaxed, Release},
     },
 };
 
@@ -30,19 +30,18 @@ impl<T> Channel<T> {
     }
 
     pub fn is_ready(&self) -> bool {
-        self.ready.load(Acquire)
+        self.ready.load(Relaxed)
     }
 
-    /// Panics if no message is available yet.
+    /// Panics if no message is available yet,
+    /// or if the message was already consumed.
     ///
     /// Tip: Use `is_ready` to check first.
-    ///
-    /// # Safety
-    /// Only call this once!
-    pub unsafe fn receive(&self) -> T {
-        if !self.ready.load(Acquire) {
+    pub fn receive(&self) -> T {
+        if !self.ready.swap(false, Acquire) {
             panic!("no message available!");
         }
-        (*self.message.get()).assume_init_read()
+        // Safety: We've just checked (and reset) the ready flag.
+        unsafe { (*self.message.get()).assume_init_read() }
     }
 }
