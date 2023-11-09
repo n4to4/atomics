@@ -21,6 +21,7 @@ pub fn channel<T>() -> (Sender<T>, Receiver<T>) {
 pub struct Sender<T> {
     channel: Arc<Channel<T>>,
 }
+
 pub struct Receiver<T> {
     channel: Arc<Channel<T>>,
 }
