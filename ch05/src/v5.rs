@@ -2,7 +2,10 @@ use std::{
     cell::UnsafeCell,
     marker::PhantomData,
     mem::MaybeUninit,
-    sync::atomic::AtomicBool,
+    sync::atomic::{
+        AtomicBool,
+        Ordering::{Acquire, Release},
+    },
     thread::{self, Thread},
 };
 
@@ -43,5 +46,22 @@ impl<T> Channel<T> {
                 _no_send: PhantomData,
             },
         )
+    }
+}
+
+impl<T> Sender<'_, T> {
+    pub fn send(self, message: T) {
+        unsafe { (*self.channel.message.get()).write(message) };
+        self.channel.ready.store(true, Release);
+        self.receiving_thread.unpark();
+    }
+}
+
+impl<T> Receiver<'_, T> {
+    pub fn receive(self) -> T {
+        while !self.channel.ready.swap(false, Acquire) {
+            thread::park();
+        }
+        unsafe { (*self.channel.message.get()).assume_init_read() }
     }
 }
