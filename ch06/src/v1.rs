@@ -1,7 +1,10 @@
 use std::{
     ops::Deref,
     ptr::NonNull,
-    sync::atomic::{AtomicUsize, Ordering::Relaxed},
+    sync::atomic::{
+        fence, AtomicUsize,
+        Ordering::{Acquire, Relaxed, Release},
+    },
 };
 
 struct ArcData<T> {
@@ -45,5 +48,17 @@ impl<T> Clone for Arc<T> {
             std::process::abort();
         }
         Arc { ptr: self.ptr }
+    }
+}
+
+impl<T> Drop for Arc<T> {
+    fn drop(&mut self) {
+        // TODO: Memory ordering.
+        if self.data().ref_count.fetch_sub(1, Release) == 1 {
+            fence(Acquire);
+            unsafe {
+                drop(Box::from_raw(self.ptr.as_ptr()));
+            }
+        }
     }
 }
