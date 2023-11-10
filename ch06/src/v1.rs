@@ -1,4 +1,8 @@
-use std::{ops::Deref, ptr::NonNull, sync::atomic::AtomicUsize};
+use std::{
+    ops::Deref,
+    ptr::NonNull,
+    sync::atomic::{AtomicUsize, Ordering::Relaxed},
+};
 
 struct ArcData<T> {
     ref_count: AtomicUsize,
@@ -32,5 +36,13 @@ impl<T> Deref for Arc<T> {
 
     fn deref(&self) -> &T {
         &self.data().data
+    }
+}
+
+impl<T> Clone for Arc<T> {
+    fn clone(&self) -> Self {
+        // TODO: Handle overflows.
+        self.data().ref_count.fetch_add(1, Relaxed);
+        Arc { ptr: self.ptr }
     }
 }
