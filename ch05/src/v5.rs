@@ -34,7 +34,7 @@ impl<T> Channel<T> {
         }
     }
 
-    pub fn split<'a>(&'a mut self) -> (Sender<'a, T>, Receiver<'a, T>) {
+    pub fn split(&mut self) -> (Sender<'_, T>, Receiver<'_, T>) {
         *self = Self::new();
         (
             Sender {
