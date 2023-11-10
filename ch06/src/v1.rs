@@ -41,8 +41,9 @@ impl<T> Deref for Arc<T> {
 
 impl<T> Clone for Arc<T> {
     fn clone(&self) -> Self {
-        // TODO: Handle overflows.
-        self.data().ref_count.fetch_add(1, Relaxed);
+        if self.data().ref_count.fetch_add(1, Relaxed) > usize::MAX / 2 {
+            std::process::abort();
+        }
         Arc { ptr: self.ptr }
     }
 }
