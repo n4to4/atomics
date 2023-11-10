@@ -65,3 +65,11 @@ impl<T> Receiver<'_, T> {
         unsafe { (*self.channel.message.get()).assume_init_read() }
     }
 }
+
+impl<T> Drop for Channel<T> {
+    fn drop(&mut self) {
+        if *self.ready.get_mut() {
+            unsafe { self.message.get_mut().assume_init_drop() }
+        }
+    }
+}
