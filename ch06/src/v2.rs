@@ -119,6 +119,25 @@ impl<T> Weak<T> {
     fn data(&self) -> &ArcData<T> {
         unsafe { self.ptr.as_ref() }
     }
+
+    pub fn upgrade(&self) -> Option<Arc<T>> {
+        let mut n = self.data().data_ref_count.load(Relaxed);
+        loop {
+            if n == 0 {
+                return None;
+            }
+            assert!(n < usize::MAX);
+            if let Err(e) =
+                self.data()
+                    .data_ref_count
+                    .compare_exchange_weak(n, n + 1, Relaxed, Relaxed)
+            {
+                n = e;
+                continue;
+            }
+            return Some(Arc { weak: self.clone() });
+        }
+    }
 }
 
 #[test]
