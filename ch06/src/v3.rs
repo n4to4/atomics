@@ -129,3 +129,30 @@ impl<T> Weak<T> {
         }
     }
 }
+
+impl<T> Arc<T> {
+    pub fn get_mut(arc: &mut Self) -> Option<&mut T> {
+        // Acquire matches Weak::drop's Release decrement, to make sure any
+        // upgraded pointers are visible in the next data_ref_count.load.
+        if arc
+            .data()
+            .alloc_ref_count
+            .compare_exchange(1, usize::MAX, Acquire, Relaxed)
+            .is_err()
+        {
+            return None;
+        }
+        let is_unique = arc.data().data_ref_count.load(Relaxed) == 1;
+        // Release matches Acquire increment in `downgrade`, to make sure any
+        // changes to the data_ref_count that come after `downgrade` don't
+        // change the is_unique result above.
+        arc.data().alloc_ref_count.store(1, Release);
+        if !is_unique {
+            return None;
+        }
+        // Acquire to match Arc::drop's Release decrement, to make sure nothing
+        // else is accessing the data.
+        fence(Acquire);
+        unsafe { Some(&mut *arc.data().data.get()) }
+    }
+}
