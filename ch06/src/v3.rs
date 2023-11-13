@@ -83,3 +83,28 @@ impl<T> Drop for Weak<T> {
         }
     }
 }
+
+impl<T> Clone for Arc<T> {
+    fn clone(&self) -> Self {
+        if self.data().data_ref_count.fetch_add(1, Relaxed) > usize::MAX / 2 {
+            std::process::abort();
+        }
+        Arc { ptr: self.ptr }
+    }
+}
+
+impl<T> Drop for Arc<T> {
+    fn drop(&mut self) {
+        if self.data().data_ref_count.fetch_sub(1, Release) == 1 {
+            fence(Acquire);
+            // Safety: The data reference counter is zero,
+            // so nothing will access the data anymore.
+            unsafe {
+                ManuallyDrop::drop(&mut *self.data().data.get());
+            }
+            // Now that there's no `Arc<T>`s left,
+            // drop the implicit weak pointer that represented all `Arc<T>`s.
+            drop(Weak { ptr: self.ptr });
+        }
+    }
+}
