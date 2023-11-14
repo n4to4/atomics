@@ -11,7 +11,7 @@ fn main() {
     black_box(&A);
 
     thread::spawn(|| loop {
-        black_box(A.load(Relaxed));
+        A.store(0, Relaxed);
     });
 
     let start = Instant::now();
