@@ -1,10 +1,27 @@
+#![allow(dead_code)]
+
 fn main() {
-    v1::run();
+    v0::run();
 }
 
 mod v0 {
-    #![allow(dead_code)]
+    use std::{
+        hint::black_box, sync::atomic::AtomicU64, sync::atomic::Ordering::Relaxed, time::Instant,
+    };
 
+    static A: AtomicU64 = AtomicU64::new(0);
+
+    pub fn run() {
+        black_box(&A);
+        let start = Instant::now();
+        for _ in 0..1_000_000_000 {
+            black_box(A.load(Relaxed));
+        }
+        println!("{:?}", start.elapsed());
+    }
+}
+
+mod v1 {
     use std::{
         hint::black_box,
         sync::atomic::{AtomicU64, Ordering::Relaxed},
@@ -30,7 +47,7 @@ mod v0 {
     }
 }
 
-mod v1 {
+mod v2 {
     use std::{
         hint::black_box,
         sync::atomic::{AtomicU64, Ordering::Relaxed},
