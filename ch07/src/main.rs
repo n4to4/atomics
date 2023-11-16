@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 fn main() {
-    v0::run();
+    v2::run();
 }
 
 mod v0 {
