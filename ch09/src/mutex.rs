@@ -1,8 +1,10 @@
 use std::{
     cell::UnsafeCell,
     ops::{Deref, DerefMut},
-    sync::atomic::AtomicU32,
+    sync::atomic::{AtomicU32, Ordering::Acquire},
 };
+
+use atomic_wait::wait;
 
 pub struct Mutex<T> {
     /// 0: unlocked
@@ -27,5 +29,24 @@ impl<T> Deref for MutexGuard<'_, T> {
 impl<T> DerefMut for MutexGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.mutex.value.get() }
+    }
+}
+
+impl<T> Mutex<T> {
+    pub const fn new(value: T) -> Self {
+        Self {
+            state: AtomicU32::new(0), // unlocked state
+            value: UnsafeCell::new(value),
+        }
+    }
+
+    pub fn lock(&self) -> MutexGuard<T> {
+        // Set the state to 1: locked.
+        while self.state.swap(1, Acquire) == 1 {
+            // If it was already locked..
+            // .. wait, unless the state is no longer 1.
+            wait(&self.state, 1);
+        }
+        MutexGuard { mutex: self }
     }
 }
