@@ -1,4 +1,8 @@
-use std::{cell::UnsafeCell, ops::Deref, sync::atomic::AtomicU32};
+use std::{
+    cell::UnsafeCell,
+    ops::{Deref, DerefMut},
+    sync::atomic::AtomicU32,
+};
 
 pub struct Mutex<T> {
     /// 0: unlocked
@@ -17,5 +21,11 @@ impl<T> Deref for MutexGuard<'_, T> {
     type Target = T;
     fn deref(&self) -> &Self::Target {
         unsafe { &*self.mutex.value.get() }
+    }
+}
+
+impl<T> DerefMut for MutexGuard<'_, T> {
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        unsafe { &mut *self.mutex.value.get() }
     }
 }
