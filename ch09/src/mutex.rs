@@ -1,10 +1,12 @@
+use atomic_wait::{wait, wake_one};
 use std::{
     cell::UnsafeCell,
     ops::{Deref, DerefMut},
-    sync::atomic::{AtomicU32, Ordering::Acquire},
+    sync::atomic::{
+        AtomicU32,
+        Ordering::{Acquire, Release},
+    },
 };
-
-use atomic_wait::wait;
 
 pub struct Mutex<T> {
     /// 0: unlocked
@@ -48,5 +50,14 @@ impl<T> Mutex<T> {
             wait(&self.state, 1);
         }
         MutexGuard { mutex: self }
+    }
+}
+
+impl<T> Drop for MutexGuard<'_, T> {
+    fn drop(&mut self) {
+        // Set the state back to 0: unlocked.
+        self.mutex.state.store(0, Release);
+        // Wake up one of the waiting threads, if any.
+        wake_one(&self.mutex.state);
     }
 }
