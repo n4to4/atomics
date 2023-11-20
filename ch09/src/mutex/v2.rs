@@ -4,7 +4,7 @@ use std::{
     ops::{Deref, DerefMut},
     sync::atomic::{
         AtomicU32,
-        Ordering::{Acquire, Release},
+        Ordering::{Acquire, Relaxed, Release},
     },
 };
 
@@ -44,11 +44,10 @@ impl<T> Mutex<T> {
     }
 
     pub fn lock(&self) -> MutexGuard<T> {
-        // Set the state to 1: locked.
-        while self.state.swap(1, Acquire) == 1 {
-            // If it was already locked..
-            // .. wait, unless the state is no longer 1.
-            wait(&self.state, 1);
+        if self.state.compare_exchange(0, 1, Acquire, Relaxed).is_err() {
+            while self.state.swap(2, Acquire) != 0 {
+                wait(&self.state, 2);
+            }
         }
         MutexGuard { mutex: self }
     }
@@ -56,9 +55,8 @@ impl<T> Mutex<T> {
 
 impl<T> Drop for MutexGuard<'_, T> {
     fn drop(&mut self) {
-        // Set the state back to 0: unlocked.
-        self.mutex.state.store(0, Release);
-        // Wake up one of the waiting threads, if any.
-        wake_one(&self.mutex.state);
+        if self.mutex.state.swap(0, Release) == 2 {
+            wake_one(&self.mutex.state);
+        }
     }
 }
