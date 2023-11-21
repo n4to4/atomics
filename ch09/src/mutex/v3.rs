@@ -45,11 +45,27 @@ impl<T> Mutex<T> {
 
     pub fn lock(&self) -> MutexGuard<T> {
         if self.state.compare_exchange(0, 1, Acquire, Relaxed).is_err() {
-            while self.state.swap(2, Acquire) != 0 {
-                wait(&self.state, 2);
-            }
+            // The lock was already locked. :(
+            lock_contended(&self.state);
         }
         MutexGuard { mutex: self }
+    }
+}
+
+fn lock_contended(state: &AtomicU32) {
+    let mut spin_count = 0;
+
+    while state.load(Relaxed) == 1 && spin_count < 100 {
+        spin_count += 1;
+        std::hint::spin_loop();
+    }
+
+    if state.compare_exchange(0, 1, Acquire, Relaxed).is_ok() {
+        return;
+    }
+
+    while state.swap(2, Acquire) != 0 {
+        wait(state, 2);
     }
 }
 
