@@ -1,14 +1,13 @@
 use std::{
     cell::UnsafeCell,
-    fmt::Write,
     ops::{Deref, DerefMut},
     sync::atomic::{
         AtomicU32,
-        Ordering::{Acquire, Relaxed},
+        Ordering::{Acquire, Relaxed, Release},
     },
 };
 
-use atomic_wait::wait;
+use atomic_wait::{wait, wake_all, wake_one};
 
 pub struct RwLock<T> {
     /// The number of readers, or u32::MAX if write-locked.
@@ -63,6 +62,15 @@ impl<T> Deref for ReadGuard<'_, T> {
     }
 }
 
+impl<T> Drop for ReadGuard<'_, T> {
+    fn drop(&mut self) {
+        if self.rwlock.state.fetch_sub(1, Release) == 1 {
+            // Wake up a waiting writer, if any.
+            wake_one(&self.rwlock.state);
+        }
+    }
+}
+
 pub struct WriteGuard<'a, T> {
     rwlock: &'a RwLock<T>,
 }
@@ -77,5 +85,13 @@ impl<T> Deref for WriteGuard<'_, T> {
 impl<T> DerefMut for WriteGuard<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { &mut *self.rwlock.value.get() }
+    }
+}
+
+impl<T> Drop for WriteGuard<'_, T> {
+    fn drop(&mut self) {
+        self.rwlock.state.store(0, Release);
+        // Wake up all waiting readers and writers.
+        wake_all(&self.rwlock.state);
     }
 }
