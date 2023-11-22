@@ -34,6 +34,13 @@ pub struct ReadGuard<'a, T> {
     rwlock: &'a RwLock<T>,
 }
 
+impl<T> Deref for ReadGuard<'_, T> {
+    type Target = T;
+    fn deref(&self) -> &Self::Target {
+        unsafe { &*self.rwlock.value.get() }
+    }
+}
+
 pub struct WriteGuard<'a, T> {
     rwlock: &'a RwLock<T>,
 }
